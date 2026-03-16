@@ -1,26 +1,80 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
-import { Search, UserRoundKey, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
+import { Search, UserRoundCheck, X } from "lucide-react";
 import { InputGroup, InputGroupInput, InputGroupAddon } from "../ui/input-group";
 import { Button } from "../ui/button";
-import { getUserByPhoneOrUserCode } from "@/features/user/user.api";
-import type { User } from "@/features/user/user.type";
-import { Item, ItemActions, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "../ui/item";
-import { MemberRoleLabel, MemberRole } from "@/features/chat/chat.types";
+import { Item, ItemActions, ItemContent, ItemMedia, ItemTitle } from "../ui/item";
 import { AvatarImage, AvatarFallback, Avatar } from "../ui/avatar";
-import type { DropdownMenuTrigger, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem } from "../ui/dropdown-menu";
-
+import type { Friendship, UserSearchRes } from "@/features/friendship/friendship.type";
+import { acceptFriendRequest, cancelFriendRequest, getUserByPhoneOrUserCode, sendFriendRequest } from "@/features/friendship/friendship.api";
+import { Notify } from "@/lib/notify";
+import { useConfirmDialog } from "@/hook/useConfirmDialog";
+import type { ResponseObject } from "@/lib/ResponseObject";
 interface ContactsListProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    userId: number;
 }
 
-export default function ContactsList({ open, onOpenChange }: ContactsListProps) {
+
+
+export default function ContactsList({ open, onOpenChange, userId }: ContactsListProps) {
+    
     const [searchKeyword, setSearchKeyword] = useState("");
     const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState("");
-    const [searchResults, setSearchResults] = useState<User[]>([]);
+    const [searchResults, setSearchResults] = useState<UserSearchRes[]>([]);
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const fallback = (value: string) => value?.trim()?.charAt(0)?.toUpperCase() ?? "C";
+
+    const handleSendFriendRequest = async (userId: number) => {
+        try {
+            await sendFriendRequest(userId).then((res:ResponseObject<Friendship>)=>{
+                Notify.success({ title: "Thành công", description: "Đã gửi yêu cầu kết bạn." });
+                setSearchResults(
+                    searchResults.map((item:UserSearchRes) =>
+                        item.id === userId ? { ...item, status: "PENDING", requestedById: res.data.requestedBy.id } : item
+                    )
+                );
+            });
+            
+        } catch (err:any) {Notify.error({ title: "Thất bại", description: err.message??"Lỗi không xác định" });
+        }
+    };
+
+    const handleCancelFriendRequest = async (userId: number) => {
+        console.log(userId)
+        const ok = await confirm({
+            title: "Hủy yêu cầu kết bạn",
+            description: "Bạn có chắc chắn muốn hủy yêu cầu kết bạn này không?",
+            confirmText: "Hủy yêu cầu",
+            cancelText: "Quay lại",
+            confirmVariant: "destructiveSoft"
+        });
+        if (!ok) return;
+        try {
+            await cancelFriendRequest(userId).then(()=>{Notify.success({ title: "Thành công", description: "Đã hủy yêu cầu kết bạn." });});
+            setSearchResults(
+                searchResults.map((item:UserSearchRes) =>
+                    item.id === userId ? { ...item, status: "NONE" } : item
+                )
+            );
+        } catch (err:any) {Notify.error({ title: "Thất bại", description: err.message??"Lỗi không xác định" });
+        }
+
+    };
+    
+    const handleAcceptFriendRequest = async (userId: number) => {
+        try {
+            await acceptFriendRequest(userId).then(()=>{Notify.success({ title: "Thành công", description: "Đã chấp nhận yêu cầu kết bạn." });});
+            setSearchResults(
+                searchResults.map((item:UserSearchRes) =>
+                    item.id === userId ? { ...item, status: "ACCEPTED" } : item
+                )
+            );
+        } catch (err:any) {Notify.error({ title: "Thất bại", description: err.message??"Lỗi không xác định" });
+        }
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -41,7 +95,7 @@ export default function ContactsList({ open, onOpenChange }: ContactsListProps) 
             }
 
             try {
-                const res = (await getUserByPhoneOrUserCode(keyword)) as unknown as User[];
+                const res = (await getUserByPhoneOrUserCode(keyword)) as unknown as UserSearchRes[];
 
                 if (mounted) {
                     setSearchResults(res);
@@ -62,7 +116,7 @@ export default function ContactsList({ open, onOpenChange }: ContactsListProps) 
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Thêm bạn mới</DialogTitle>
+                    <DialogTitle>Tìm kiếm bạn bè</DialogTitle>
                 </DialogHeader>
                 <InputGroup>
                     <InputGroupInput placeholder="Tìm bằng mã NV hoặc số điện thoại..."
@@ -84,7 +138,15 @@ export default function ContactsList({ open, onOpenChange }: ContactsListProps) 
                         )
                     }
                 </InputGroup>
-                {searchResults.map((item: User) => {
+
+                {
+                    (searchKeyword.length > 0 && searchResults.length === 0) && (
+                        <div className="px-4 py-6 text-sm text-slate-500 text-center">
+                            Không tìm thấy người dùng phù hợp.
+                        </div>
+                    )
+                }
+                {searchResults.map((item: UserSearchRes) => {
 
                     return (
                         <div
@@ -105,15 +167,49 @@ export default function ContactsList({ open, onOpenChange }: ContactsListProps) 
                                 </ItemContent>
 
                                 <ItemActions>
-                                    <Button variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-500">
-                                        Kết bạn
-                                    </Button>
+                                    {
+                                        item.status === "NONE" && (
+                                            <Button onClick={() => handleSendFriendRequest(item.id)} variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-500">
+                                                Kết bạn
+                                            </Button>
+                                        )
+                                    }
+                                    {
+                                        (item.status === "PENDING" && item.requestedById == userId) && (
+                                            <Button onClick={() => handleCancelFriendRequest(item.id)} variant="outline" size="sm" className="border-gray-500 text-gray-500 hover:bg-gray-50 hover:text-gray-500">
+                                                Đã yêu cầu
+                                            </Button>
+                                        )
+                                    }
+                                    {
+                                        (item.status === "PENDING" && item.requestedById !== userId) && (
+                                            <Button onClick={() => handleAcceptFriendRequest(item.id)} variant="outline" size="sm" className="border-green-500 text-green-500 hover:bg-green-50 hover:text-green-500">
+                                                Chấp nhận
+                                            </Button>
+                                        )
+                                    }
+                                    {
+                                        item.status === "ACCEPTED" && (
+                                            <Button disabled variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-500">
+                                                <UserRoundCheck /> Bạn bè
+                                            </Button>
+                                        )
+                                    }
+                                    {
+                                        item.status === "BLOCKED" && (
+                                            <Button variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-500">
+                                                Đã chặn
+                                            </Button>
+                                        )
+                                    }
                                 </ItemActions>
                             </Item>
                         </div>
                     );
                 })}
+
             </DialogContent>
+            <ConfirmDialog />
         </Dialog>
     );
 }

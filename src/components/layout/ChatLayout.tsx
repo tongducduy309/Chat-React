@@ -349,6 +349,7 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
       <div className="flex items-start w-full h-full gap-2">
   <ConversationList
     conversations={conversations}
+    userId={user?.id??-1}
     handleConversationClick={(id) => {
       
       setConversationId(id);

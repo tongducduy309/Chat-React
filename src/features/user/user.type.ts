@@ -10,3 +10,4 @@ export interface User {
     avatarUrl?: string;
     status: UserStatus;
 }
+

@@ -7,6 +7,10 @@ import { getProfile } from "@/features/user/user.api";
 import { ContactsLayout } from "./ContactsLayout";
 import CalendarLayout from "./CalendarLayout";
 import { Toaster } from "../ui/sonner";
+import { App, notification } from "antd";
+import { checkTodayAttendance } from "@/features/attendance/attendance.api";
+import AttendanceDialog from "../attendance/AttendanceDialog";
+import { Button } from "../ui/button";
 
 export const SidebarTab = {
   CHAT: "CHAT",
@@ -38,8 +42,10 @@ const PATH_TO_TAB: Record<string, SidebarTab> = {
 export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { notification } = App.useApp();
 
   const [user, setUser] = useState<User>();
+  const [openAttendance, setOpenAttendance] = useState(false);
 
   const activeTab = useMemo<SidebarTab>(() => {
     return PATH_TO_TAB[location.pathname] ?? SidebarTab.CHAT;
@@ -65,6 +71,28 @@ export default function AppLayout() {
     }
   };
 
+  const attendance = async () => {
+    const res = await checkTodayAttendance();
+    if (!res.data) {
+      notification.warning({
+        title: "Điểm danh",
+        description: "Bạn chưa điểm danh.",
+        duration: 0,
+        btn: (
+          <Button
+            onClick={() => {
+              setOpenAttendance(true);
+              notification.destroy();
+            }}
+            className="bg-yellow-500 text-white hover:bg-yellow-300"
+          >
+            Điểm danh ngay
+          </Button>
+        ),
+      });
+    }
+  };
+
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getProfile();
@@ -72,11 +100,13 @@ export default function AppLayout() {
     };
 
     fetchUser();
+    attendance();
   }, []);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-white">
       <Toaster richColors position="top-right" />
+
       <Sidebar
         user={user ?? null}
         activeTab={activeTab}
@@ -84,6 +114,13 @@ export default function AppLayout() {
         skipNotifications={new Map()}
       />
       <div className="min-w-0 flex-1 p-2">{renderPage()}</div>
+      <AttendanceDialog
+        open={openAttendance}
+        onClose={() => setOpenAttendance(false)}
+        onSuccess={() => {
+          setOpenAttendance(false);
+        }}
+      />
     </div>
   );
 }

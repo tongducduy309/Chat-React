@@ -12,9 +12,10 @@ interface ConversationListProps {
   handleConversationClick: (conversationId: number) => void;
   conversations?: ConversationRes[];
   onSearchResults?: (results: ConversationRes[]) => void;
+  userId: number;
 }
 
-export default function ConversationList({ handleConversationClick, conversations = [], onSearchResults }: ConversationListProps) {
+export default function ConversationList({ handleConversationClick, conversations = [], onSearchResults, userId }: ConversationListProps) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState("");
   const [openContacts, setOpenContacts] = useState(false);
@@ -117,7 +118,7 @@ export default function ConversationList({ handleConversationClick, conversation
         ))
       }
       <ContactsList 
-        open={openContacts} onOpenChange={setOpenContacts} 
+        open={openContacts} onOpenChange={setOpenContacts} userId={userId}
       />
     </div>
   );
