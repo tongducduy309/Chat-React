@@ -1,73 +1,174 @@
-# React + TypeScript + Vite
+# 🚀 Chat React App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern real-time chat application built with **React**, delivering a smooth, fast, and interactive messaging experience. This project is designed with scalability in mind and integrates seamlessly with a backend API system.
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 🔗 Backend API
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+This frontend connects to the backend service:
 
-## Expanding the ESLint configuration
+👉 **Spring Boot Backend API:**
+https://github.com/tongducduy309/ChatApp-SpringBoot
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+👉 **Face Recognition Service (FastAPI):**
+https://github.com/tongducduy309/Face-Service-ChatApp
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 📌 Features
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+* 🔐 Authentication (Login / Register with JWT)
+* 💬 Real-time chat (1-1 messaging)
+* 👥 Friend management system
+
+  * Send / Accept / Reject friend requests
+  * Block / Unblock users
+* 🔔 Notification system
+* 📅 Event / calendar feature
+* 📷 Face recognition integration
+* 🧑‍💻 Responsive UI (mobile & desktop)
+* ⚡ Optimized rendering (React hooks, memoization)
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+
+* ⚛️ React
+* ⚡ Vite
+* 🎨 TailwindCSS
+* 🧩 Ant Design
+* 🔄 Axios
+* 🧭 React Router
+* 🧠 Custom Hooks
+
+### Backend
+
+* ☕ Spring Boot (Main API)
+* 🧠 FastAPI (Face Recognition)
+* 🔐 JWT Authentication
+* 🗄️ MySQL / PostgreSQL
+
+---
+
+## 📂 Project Structure
+
+```bash
+src/
+│── components/      # Reusable UI components
+│── pages/           # Main pages (Chat, Login, Register,...)
+│── services/        # API calls
+│── hooks/           # Custom React hooks
+│── utils/           # Helper functions
+│── assets/          # Images, icons
+│── styles/          # Global styles
+│── App.tsx
+│── main.tsx
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## ⚙️ Installation
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Clone repository
+
+```bash
+git clone https://github.com/tongducduy309/Chat-React.git
+cd Chat-React
 ```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+or
+
+```bash
+yarn install
+```
+
+### 3. Setup environment variables
+
+Create `.env` file in root:
+
+```env
+VITE_API_URL=http://localhost:8080/api
+VITE_FACE_API_URL=http://localhost:8000
+```
+
+### 4. Run project
+
+```bash
+npm run dev
+```
+
+---
+
+## 🔄 API Integration
+
+The application communicates with backend services via REST APIs:
+
+* Auth API (login/register)
+* Chat API (messages)
+* Friendship API
+* Event API
+* Face Recognition API
+
+Example:
+
+```ts
+const response = await axios.get(`${import.meta.env.VITE_API_URL}/users`);
+```
+
+---
+
+## 📸 Screenshots
+
+### 🔐 Login Page
+![Login](./public/images/login.png)
+<p align="center">
+  <img src="./public/images/chat.png" width="600"/>
+</p>
+
+
+### 🏠 Chat UI
+<p align="center">
+  <img src="./public/images/chat.png" width="600"/>
+</p>
+
+### Call UI
+<p align="center">
+  <img src="./public/images/call.png" width="600"/>
+</p>
+
+### 📅 Calendar Page
+<p align="center">
+  <img src="./public/images/calendar.png" width="600"/>
+</p>
+
+---
+
+## 🚧 Future Improvements
+
+* 📹 Video / voice call (WebRTC)
+* 🧠 AI chatbot integration
+* 🌍 Multi-language (i18n)
+* 📱 Mobile app (React Native)
+* 📡 WebSocket real-time chat (Socket.IO)
+
+
+---
+
+## 👨‍💻 Author
+
+**Tong Duc Duy**
+
+* GitHub: https://github.com/tongducduy309
+
+---
+

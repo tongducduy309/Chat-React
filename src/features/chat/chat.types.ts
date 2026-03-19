@@ -1,3 +1,4 @@
+import type { FriendshipStatus } from "../friendship/friendship.type";
 import type { User } from "../user/user.type";
 
 export const MessageType = {
@@ -48,6 +49,8 @@ export interface DetailConversationRes {
   messages: MessageRes[];
   members: ConversationMember[];
   creatorId: number;
+  friendshipStatus?: FriendshipStatus;
+  targetUserId?: number;
 };
 
 export interface ConversationCreate {

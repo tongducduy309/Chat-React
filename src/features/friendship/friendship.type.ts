@@ -1,7 +1,16 @@
 import type { User } from "../user/user.type";
 
 export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
-export type FriendshipStatus = 'NONE' | 'PENDING' | 'ACCEPTED' | 'BLOCKED';
+export const FriendshipStatus = {
+    NONE: 'NONE',
+    PENDING: 'PENDING',
+    ACCEPTED: 'ACCEPTED',
+    BLOCKED: 'BLOCKED',
+    SENT: 'SENT',
+    RECEIVED: 'RECEIVED',
+    BE_BLOCKED: 'BE_BLOCKED',
+} as const;
+export type FriendshipStatus = (typeof FriendshipStatus)[keyof typeof FriendshipStatus];
 export interface UserSearchRes {
     id: number;
     displayName: string;
@@ -18,4 +27,9 @@ export interface Friendship {
     user2Id: number;
     status: FriendshipStatus;
     requestedBy: User;
+}
+
+export interface UpdateFriendshipRes {
+    targetUserId: number;
+    friendshipStatus: FriendshipStatus;
 }

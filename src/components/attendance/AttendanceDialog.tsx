@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button, Modal, Space, Typography, message, notification } from "antd";
 import { Camera, RefreshCcw } from "lucide-react";
 import { http } from "@/lib/http";
+import { checkIn } from "@/features/attendance/attendance.api";
 
 const { Text } = Typography;
 
@@ -114,6 +115,19 @@ export default function AttendanceDialog({
 
     try {
       setSubmitting(true);
+      await checkIn().then(() => {
+        notification.success({
+        title: "Điểm danh thành công",
+      });
+      onSuccess?.();
+      handleClose();
+      }).catch((error) => {
+        const msg =
+        error?.response?.data?.message || "Điểm danh thất bại, vui lòng thử lại.";
+      message.error(msg);
+      }).finally(()=>{
+        setSubmitting(false);
+      })
 
       // const formData = new FormData();
       // formData.append("file", capturedBlob, "attendance.jpg");
@@ -125,18 +139,10 @@ export default function AttendanceDialog({
       //   },
       // });
 
-      notification.success({
-        message: "Điểm danh thành công",
-      });
-      onSuccess?.();
-      handleClose();
+      
     } catch (error: any) {
-      const msg =
-        error?.response?.data?.message || "Điểm danh thất bại, vui lòng thử lại.";
-      message.error(msg);
-    } finally {
-      setSubmitting(false);
-    }
+      
+    } 
   };
 
   const handleClose = () => {

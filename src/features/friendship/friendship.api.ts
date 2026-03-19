@@ -35,12 +35,12 @@ export async function unfriend(userId: number): Promise<ResponseObject<void>> {
   return data
 }
 
-export async function blockFriend(userId: number): Promise<ResponseObject<void>> {
+export async function blockUser(userId: number): Promise<ResponseObject<void>> {
   const {data} = await http.post(`/friends/block/${userId}`);
   return data
 }
 
-export async function unblockFriend(userId: number): Promise<ResponseObject<void>> {
+export async function unblockUser(userId: number): Promise<ResponseObject<void>> {
   const {data} = await http.post(`/friends/unblock/${userId}`);
   return data
 }

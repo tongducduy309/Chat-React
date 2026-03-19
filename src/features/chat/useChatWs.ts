@@ -3,11 +3,12 @@ import { getProfile } from "../user/user.api";
 import type { User } from "../user/user.type";
 import type { ConversationCreate, ConversationRes, MessageRes, NameUpdateRes, ReadMessageRes } from "./chat.types";
 import type { CallRes } from "../call/call.types";
-import { MessageEvent } from "../websocket/websocket.types";
+import { ConversationEvents, FriendshipEvents } from "../websocket/websocket.types";
+import type { UpdateFriendshipRes } from "../friendship/friendship.type";
 type RawListener = (raw: string) => void;
 
 export function useChatWs(onMessage: (m: MessageRes) => void, onCall: (m: CallRes) => void, onConversationCreate: (m: ConversationCreate) => void, 
-onReadMessage: (m: ReadMessageRes) => void, onNameUpdate: (n: NameUpdateRes, m: MessageRes) => void) {
+onReadMessage: (m: ReadMessageRes) => void, onNameUpdate: (n: NameUpdateRes, m: MessageRes) => void, onUpdateFriendship: (u: UpdateFriendshipRes) => void) {
   const wsRef = useRef<WebSocket | null>(null);
   const rawListeners = useRef<RawListener[]>([]);
   const [ready, setReady] = useState(false);
@@ -47,22 +48,27 @@ onReadMessage: (m: ReadMessageRes) => void, onNameUpdate: (n: NameUpdateRes, m: 
         try {
           const parsed = JSON.parse(raw);
 
-          if (parsed.event===MessageEvent.CONVERSATION_CREATE) {
+          if (parsed.event===ConversationEvents.CONVERSATION_CREATE) {
             onConversationCreate(parsed.data);
             return
           }
 
-          if (parsed.event===MessageEvent.READ_MESSAGE) {
+          if (parsed.event===ConversationEvents.READ_MESSAGE) {
             onReadMessage(parsed.data);
             return
           }
 
-          if (parsed.event===MessageEvent.NAME_UPDATE) {
+          if (parsed.event===ConversationEvents.NAME_UPDATE) {
             onNameUpdate(parsed.data.nameUpdateRes, parsed.data.messageRes);
             return
           }
 
-          if (parsed.event===MessageEvent.MESSAGE) {
+          if (parsed.event===FriendshipEvents.FRIENDSHIP_UPDATE) {
+            onUpdateFriendship(parsed.data);
+            return
+          }
+
+          if (parsed.event===ConversationEvents.MESSAGE) {
             onMessage(parsed.data);
           }
           else {

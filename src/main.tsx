@@ -6,7 +6,8 @@ import { App as AntdApp, ConfigProvider } from "antd";
 import "./index.css";
 import AppLayout from "./components/layout/AppLayout";
 import { AntdAppInitializer } from "./components/providers/AntdAppInitializer";
-
+import App from "./App";
+import viVN from "antd/locale/vi_VN";
 // createRoot(document.getElementById('root')!).render(
 //   <StrictMode>
 //     <App />
@@ -20,6 +21,7 @@ createRoot(document.getElementById("root")!).render(<BrowserRouter>
             borderRadius: 12,
           },
         }}
+        locale={viVN}
       >
         <AntdApp
           notification={{
@@ -29,7 +31,7 @@ createRoot(document.getElementById("root")!).render(<BrowserRouter>
           }}
         >
           <AntdAppInitializer />
-          <AppLayout />
+          <App />
         </AntdApp>
       </ConfigProvider>
     </BrowserRouter>);

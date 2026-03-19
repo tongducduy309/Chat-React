@@ -1,6 +1,6 @@
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { deleteForMe, getAllConversationsByUserId, getConversationById, getDetailConversationById, readMessage, searchMessage, sendMessage } from "../../features/chat/chat.api";
-import { type MessageRes, type DetailConversationRes, type ConversationRes, type ConversationMember, MessageType, type ConversationCreate, type ReadMessageRes, type MessageSearchRes, type NameUpdateRes } from "../../features/chat/chat.types";
+import { type MessageRes, type DetailConversationRes, type ConversationRes, type ConversationMember, MessageType, type ConversationCreate, type ReadMessageRes, type MessageSearchRes, type NameUpdateRes, ConversationType } from "../../features/chat/chat.types";
 import { useChatWs } from "../../features/chat/useChatWs";
 import type { User } from "../../features/user/user.type";
 import ConversationList from "../chat/ConversationList";
@@ -15,6 +15,8 @@ import MessageSearchResults from "../chat/MessageSearchResults";
 import NicknameList from "../chat/NicknameList";
 import MembersList from "../chat/MembersList";
 import TitleAvatarList from "../chat/TitleAvatarGroup";
+import { FriendshipStatus, type UpdateFriendshipRes } from "@/features/friendship/friendship.type";
+import { App } from "antd";
 
 interface ChatLayoutProps {
   user: User | null;
@@ -92,6 +94,8 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
   const [openNickname, setOpenNickname] = useState(false);
   const [openMembers, setOpenMembers] = useState(false);
   const [openTitleAvatar, setOpenTitleAvatar] = useState(false);
+
+  const {notification} = App.useApp();
 
 
 
@@ -198,9 +202,18 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
     });
   }, [conversationId]);
 
+  const onUpdateFriendship = useCallback(async (u: UpdateFriendshipRes) => {
+    if (!conversation || conversation.type!== ConversationType.DIRECT) return;
+    if (u.targetUserId!==conversation?.targetUserId) return;
+
+    await getDetailConversationById(conversationId??-1).then((res: DetailConversationRes) => {
+      setConversation(res);
+    });
+  }, [conversation]);
 
 
-  const { ready, sendRaw, subscribeRaw } = useChatWs(onMessage, onCall, onConversationCreate, onReadMessage, onNameUpdate);
+
+  const { ready, sendRaw, subscribeRaw } = useChatWs(onMessage, onCall, onConversationCreate, onReadMessage, onNameUpdate, onUpdateFriendship);
 
 
 
@@ -377,14 +390,21 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
           subtitle=""
           type={conversation?.type}
           role={conversation?.role}
-          onCall={() => startCall()}
-          onVideoCall={() => console.log("video call")}
+          onCall={() => {
+            
+            startCall();
+          }}
+          onVideoCall={() => {
+            // startCall();
+          }}
           onOpenSearch={() => {
             setSearchMessageOpen(true);
           }}
           onOpenNickname={() => setOpenNickname(true)}
           onOpenMembers={() => setOpenMembers(true)}
           onOpenTitleAvatar={() => setOpenTitleAvatar(true)}
+          friendshipStatus={conversation.friendshipStatus}
+          targetUserId={conversation.targetUserId??-1}
         />
       </div>
 
@@ -430,6 +450,9 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
           replyTo={replyTo}
           onCancelReply={() => setReplyTo(null)}
           disabled={!canSend}
+          friendshipStatus={conversation.friendshipStatus}
+          targetUserId={conversation.targetUserId??-1}
+          type={conversation.type}
         />
       </div>
     </div>

@@ -78,7 +78,7 @@ export default function AppLayout() {
         title: "Điểm danh",
         description: "Bạn chưa điểm danh.",
         duration: 0,
-        btn: (
+        actions: (
           <Button
             onClick={() => {
               setOpenAttendance(true);
