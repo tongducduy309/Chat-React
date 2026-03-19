@@ -10,7 +10,7 @@ A modern real-time chat application built with **React**, delivering a smooth, f
 This frontend connects to the backend service:
 
 👉 **Spring Boot Backend API:**
-https://github.com/tongducduy309/ChatApp-SpringBoot
+https://github.com/tongducduy309/Chat_API
 
 👉 **Face Recognition Service (FastAPI):**
 https://github.com/tongducduy309/Face-Service-ChatApp
@@ -129,14 +129,14 @@ const response = await axios.get(`${import.meta.env.VITE_API_URL}/users`);
 
 ## 📸 Screenshots
 
-### 🔐 Login Page
+### Login Page
 ![Login](./public/images/login.png)
 <p align="center">
   <img src="./public/images/chat.png" width="600"/>
 </p>
 
 
-### 🏠 Chat UI
+### Chat UI
 <p align="center">
   <img src="./public/images/chat.png" width="600"/>
 </p>
@@ -146,7 +146,7 @@ const response = await axios.get(`${import.meta.env.VITE_API_URL}/users`);
   <img src="./public/images/call.png" width="600"/>
 </p>
 
-### 📅 Calendar Page
+### Calendar Page
 <p align="center">
   <img src="./public/images/calendar.png" width="600"/>
 </p>
