@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Button, Modal, Space, Typography, message, notification } from "antd";
+import { App, Button, Modal, Space, Typography} from "antd";
 import { Camera, RefreshCcw } from "lucide-react";
-import { http } from "@/lib/http";
 import { checkIn } from "@/features/attendance/attendance.api";
 
 const { Text } = Typography;
@@ -25,6 +24,8 @@ export default function AttendanceDialog({
   const [previewUrl, setPreviewUrl] = useState<string>("");
   const [loadingCamera, setLoadingCamera] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const {notification} = App.useApp();
 
   const stopCamera = () => {
     if (streamRef.current) {
@@ -53,21 +54,24 @@ export default function AttendanceDialog({
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-    } catch (error) {
-      message.error("Không mở được camera. Hãy kiểm tra quyền truy cập.");
+    } catch {
+      notification.error({
+        message: "Lỗi",
+        description: "Không mở được camera. Hãy kiểm tra quyền truy cập.",
+      });
     } finally {
       setLoadingCamera(false);
     }
   };
 
-  const resetCapture = () => {
+  const resetCapture = async () => {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setCapturedBlob(null);
     setPreviewUrl("");
-    startCamera();
+    await startCamera();
   };
 
-  const capturePhoto = async () => {
+  const capturePhoto = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
@@ -77,7 +81,10 @@ export default function AttendanceDialog({
     const height = video.videoHeight;
 
     if (!width || !height) {
-      message.warning("Camera chưa sẵn sàng.");
+      notification.warning({
+        message: "Cảnh báo",
+        description: "Camera chưa sẵn sàng.",
+      });
       return;
     }
 
@@ -92,7 +99,10 @@ export default function AttendanceDialog({
     canvas.toBlob(
       (blob) => {
         if (!blob) {
-          message.error("Không thể chụp ảnh.");
+          notification.error({
+            message: "Lỗi",
+            description: "Không thể chụp ảnh.",
+          });
           return;
         }
 
@@ -109,40 +119,35 @@ export default function AttendanceDialog({
 
   const handleSubmitAttendance = async () => {
     if (!capturedBlob) {
-      message.warning("Bạn cần chụp ảnh trước khi điểm danh.");
+      notification.warning({
+        message: "Cảnh báo",
+        description: "Bạn cần chụp ảnh trước khi điểm danh.",
+      });
       return;
     }
 
     try {
       setSubmitting(true);
-      await checkIn().then(() => {
-        notification.success({
-        title: "Điểm danh thành công",
+
+      await checkIn(capturedBlob);
+
+      notification.success({
+        message: "Điểm danh thành công",
+        description: "Bạn đã điểm danh bằng khuôn mặt thành công.",
       });
+
       onSuccess?.();
       handleClose();
-      }).catch((error) => {
-        const msg =
-        error?.response?.data?.message || "Điểm danh thất bại, vui lòng thử lại.";
-      message.error(msg);
-      }).finally(()=>{
-        setSubmitting(false);
-      })
-
-      // const formData = new FormData();
-      // formData.append("file", capturedBlob, "attendance.jpg");
-
-      // // đổi endpoint này theo backend của bạn
-      // await http.post("/attendance/check-in", formData, {
-      //   headers: {
-      //     "Content-Type": "multipart/form-data",
-      //   },
-      // });
-
-      
     } catch (error: any) {
-      
-    } 
+      const msg =
+        error?.response?.data?.message || "Điểm danh thất bại, vui lòng thử lại.";
+      notification.error({
+        message: "Điểm danh thất bại",
+        description: msg,
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleClose = () => {

@@ -213,7 +213,14 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
 
 
 
-  const { ready, sendRaw, subscribeRaw } = useChatWs(onMessage, onCall, onConversationCreate, onReadMessage, onNameUpdate, onUpdateFriendship);
+  const { ready, sendRaw, subscribeRaw } = useChatWs({
+  onMessage,
+  onCall,
+  onConversationCreate,
+  onReadMessage,
+  onNameUpdate,
+  onUpdateFriendship,
+});
 
 
 

@@ -15,6 +15,12 @@ export async function getMyAttendanceInMonth(month: number, year: number): Promi
   return data.data;
 }
 
-export async function checkIn(): Promise<void> {
-  await http.post("/attendance/check-in");
+
+export async function checkIn(file: File | Blob) {
+  const formData = new FormData();
+  formData.append("file", file, "attendance.jpg");
+
+  const res = await http.post("/attendance/face-check-in", formData);
+
+  return res.data;
 }

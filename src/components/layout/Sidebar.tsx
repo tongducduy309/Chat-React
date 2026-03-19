@@ -1,4 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     MessageCircleMore,
     ContactRound,
@@ -29,6 +29,7 @@ interface Props {
     activeTab: SidebarTab;
     skipNotifications: Map<SidebarTab, number>;
     onChangeTab: (tab: SidebarTab) => void;
+    activeUser: boolean;
 };
 
 function NavButton({
@@ -53,7 +54,7 @@ function NavButton({
     );
 }
 
-export default function Sidebar({ activeTab, onChangeTab, user, skipNotifications }: Props) {
+export default function Sidebar({ activeTab, onChangeTab, user, skipNotifications, activeUser }: Props) {
     const [openSettingProfile, setOpenSettingProfile] = useState(false);
     const avatarRef = useRef<HTMLDivElement>(null);
     const fallback = user?.displayName?.trim()?.charAt(0)?.toUpperCase() ?? "C";
@@ -75,9 +76,11 @@ export default function Sidebar({ activeTab, onChangeTab, user, skipNotification
     return (
         <div>
             <div className="flex h-full w-[72px] flex-col items-center bg-[#005AE0] py-3">
-                <Avatar ref={avatarRef} className="h-12 w-12" onClick={() => setOpenSettingProfile(true)}>
-                    <AvatarImage />
+                <Avatar ref={avatarRef} className="h-12 w-12 overflow-visible" onClick={() => setOpenSettingProfile(true)}>
+                    <AvatarImage src={user?.avatarUrl} />
                     <AvatarFallback>{fallback}</AvatarFallback>
+                   
+                    <AvatarBadge className={activeUser ? "bg-green-600 dark:bg-green-800" : "bg-gray-400 dark:bg-gray-300"} />
                 </Avatar>
 
 

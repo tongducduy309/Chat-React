@@ -11,6 +11,7 @@ import { App, notification } from "antd";
 import { checkTodayAttendance } from "@/features/attendance/attendance.api";
 import AttendanceDialog from "../attendance/AttendanceDialog";
 import { Button } from "../ui/button";
+import { useAppWs } from "@/features/app/useAppWs";
 
 export const SidebarTab = {
   CHAT: "CHAT",
@@ -100,8 +101,9 @@ export default function AppLayout() {
     };
 
     fetchUser();
-    attendance();
   }, []);
+
+  const {ready} = useAppWs()
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-white">
@@ -109,11 +111,12 @@ export default function AppLayout() {
 
       <Sidebar
         user={user ?? null}
+        activeUser={ready}
         activeTab={activeTab}
         onChangeTab={handleChangeTab}
         skipNotifications={new Map()}
       />
-      <div className="min-w-0 flex-1 p-2">{renderPage()}</div>
+      <div className="min-w-0 flex-1 p-2 overflow-auto">{renderPage()}</div>
       <AttendanceDialog
         open={openAttendance}
         onClose={() => setOpenAttendance(false)}
