@@ -4,27 +4,37 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group"
 import ConversationItem from "./ConversationItem";
 import { MessageType, type ConversationRes } from "@/features/chat/chat.types";
 import { useEffect, useState } from "react";
-import { getAllConversationsByUserId, searchConversation } from "@/features/chat/chat.api";
+import { getAllConversationsByUserId, getConversationBy2UserId, searchConversation } from "@/features/chat/chat.api";
 import { Button } from "../ui/button";
 import ContactsList from "../contact/ContactsList";
+import { useSearchParams } from "react-router-dom";
+
 
 interface ConversationListProps {
-  handleConversationClick: (conversationId: number) => void;
   conversations?: ConversationRes[];
   onSearchResults?: (results: ConversationRes[]) => void;
   userId: number;
 }
 
-export default function ConversationList({ handleConversationClick, conversations = [], onSearchResults, userId }: ConversationListProps) {
+export default function ConversationList({ conversations = [], onSearchResults, userId }: ConversationListProps) {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState("");
   const [openContacts, setOpenContacts] = useState(false);
-
+  const [searchParams, setSearchParams] = useSearchParams();
   const fetchConversations = async () => {
     await getAllConversationsByUserId().then((res: ConversationRes[]) => {
-
       onSearchResults?.(res);
     });
+  };
+
+  const handleOpenChat = (userId: number) => {
+    getConversationBy2UserId(userId).then((res: ConversationRes) => {
+      searchParams.set("userId", userId.toString());
+      searchParams.set("conversationId", res?.id.toString());
+
+      setSearchParams(searchParams);
+    });
+    setOpenContacts(false);
   };
 
   useEffect(() => {
@@ -113,12 +123,15 @@ export default function ConversationList({ handleConversationClick, conversation
             title={conversation.title ?? "Ẩn danh"}
             skipMessages={conversation.skipMessages}
             lastMessage={(conversation.lastMessage?.type === MessageType.CALL_VOICE || conversation.lastMessage?.type === MessageType.CALL_VIDEO) ? "Cuộc gọi" : conversation.lastMessage?.content}
-            onClick={() => handleConversationClick(conversation.id)}
+            onClick={() => {
+              searchParams.set("conversationId", conversation.id.toString());
+              setSearchParams(searchParams);
+            }}
           />
         ))
       }
       <ContactsList 
-        open={openContacts} onOpenChange={setOpenContacts} userId={userId}
+        open={openContacts} onOpenChange={setOpenContacts} userId={userId} onOpenChat={handleOpenChat}
       />
     </div>
   );

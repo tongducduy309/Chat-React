@@ -14,11 +14,12 @@ interface ContactsListProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     userId: number;
+    onOpenChat: (targetUserId: number) => void;
 }
 
 
 
-export default function ContactsList({ open, onOpenChange, userId }: ContactsListProps) {
+export default function ContactsList({ open, onOpenChange, userId, onOpenChat }: ContactsListProps) {
     
     const [searchKeyword, setSearchKeyword] = useState("");
     const [debouncedSearchKeyword, setDebouncedSearchKeyword] = useState("");
@@ -202,6 +203,9 @@ export default function ContactsList({ open, onOpenChange, userId }: ContactsLis
                                             </Button>
                                         )
                                     }
+                                    <Button variant="outline" size="sm" onClick={() => onOpenChat(item.id)}>
+                                        Nhắn tin
+                                    </Button>
                                 </ItemActions>
                             </Item>
                         </div>

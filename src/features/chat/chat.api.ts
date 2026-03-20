@@ -87,4 +87,20 @@ export async function updateTitle(conversationId: number, title: string) {
   return data.data;
 }
 
+export async function getConversationBy2UserId(targetUserId: number): Promise<ConversationRes> {
+  const {data} = await http.get(
+    `/conversations/user/with/${targetUserId}`
+  );
+
+  return data.data;
+}
+
+export async function getDetailConversationTemp(targetUserId: number): Promise<DetailConversationRes> {
+  const {data} = await http.get(
+    `/conversations/temp/with/${targetUserId}`
+  );
+
+  return data.data;
+}
+
 

@@ -1,11 +1,11 @@
 import { type CalendarMonthItemRes, type CheckInRes } from "@/features/attendance/attendance.type";
-import Calendar from "../celendar/Calendar";
+import Calendar from "../../components/celendar/Calendar";
 import { useCallback, useEffect, useState } from "react";
 import { getMyAttendanceInMonth } from "@/features/attendance/attendance.api";
 import { useCalendarWs } from "@/features/calendar/useCalendarWs";
 
 
-export default function CalendarLayout() {
+export default function CalendarPage() {
   const [events, setEvents] = useState<CalendarMonthItemRes[]>([]);
 
   const getAttendanceInMonth = useCallback(async (month: number, year: number) => {
@@ -17,7 +17,7 @@ export default function CalendarLayout() {
     console.log("Check in", data);
     setEvents((prev) => {
       const index = prev.findIndex((item) => item.date === data.date);
-      
+
       if (index !== -1) {
         const newEvents = [...prev];
         newEvents[index] = {
@@ -47,7 +47,7 @@ export default function CalendarLayout() {
     });
   }, []);
 
-  const {ready} = useCalendarWs({onAttendanceCheckIn})
+  const { ready } = useCalendarWs({ onAttendanceCheckIn })
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">

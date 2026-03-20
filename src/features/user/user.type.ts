@@ -9,5 +9,7 @@ export interface User {
     displayName: string;
     avatarUrl?: string;
     status: UserStatus;
+    departmentName?: string;
+    positionName?: string;
 }
 

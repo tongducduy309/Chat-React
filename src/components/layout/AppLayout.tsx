@@ -1,28 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ChatLayout from "./ChatLayout";
+import ChatPage from "../../pages/chat/ChatPage";
 import Sidebar from "./Sidebar";
 import type { User } from "@/features/user/user.type";
 import { getProfile } from "@/features/user/user.api";
-import { ContactsLayout } from "./ContactsLayout";
-import CalendarLayout from "./CalendarLayout";
+import { ContactsPage } from "../../pages/contact/ContactsPage";
+import CalendarPage from "../../pages/calendar/CalendarPage";
 import { Toaster } from "../ui/sonner";
 import { App, notification } from "antd";
 import { checkTodayAttendance } from "@/features/attendance/attendance.api";
 import AttendanceDialog from "../attendance/AttendanceDialog";
 import { Button } from "../ui/button";
 import { useAppWs } from "@/features/app/useAppWs";
-
-export const SidebarTab = {
-  CHAT: "CHAT",
-  CONTACT: "CONTACT",
-  CLOUD: "CLOUD",
-  CALENDAR: "CALENDAR",
-  SETTING: "SETTING",
-} as const;
-
-export type SidebarTab =
-  (typeof SidebarTab)[keyof typeof SidebarTab];
+import { SidebarTab } from "./Sidebar";
+import { DirectoryPage } from "@/pages/directory/DirectoryPage";
 
 const TAB_TO_PATH: Record<SidebarTab, string> = {
   CHAT: "/chat",
@@ -30,6 +21,7 @@ const TAB_TO_PATH: Record<SidebarTab, string> = {
   CLOUD: "/cloud",
   CALENDAR: "/calendar",
   SETTING: "/setting",
+  DIRECTORY: "/directory",
 };
 
 const PATH_TO_TAB: Record<string, SidebarTab> = {
@@ -38,6 +30,7 @@ const PATH_TO_TAB: Record<string, SidebarTab> = {
   "/cloud": SidebarTab.CLOUD,
   "/calendar": SidebarTab.CALENDAR,
   "/setting": SidebarTab.SETTING,
+  "/directory": SidebarTab.DIRECTORY,
 };
 
 export default function AppLayout() {
@@ -62,13 +55,15 @@ export default function AppLayout() {
   const renderPage = () => {
     switch (activeTab) {
       case SidebarTab.CHAT:
-        return <ChatLayout user={user ?? null} />;
+        return <ChatPage user={user ?? null} />;
       case SidebarTab.CONTACT:
-        return <ContactsLayout />;
+        return <ContactsPage />;
       case SidebarTab.CALENDAR:
-        return <CalendarLayout />;
+        return <CalendarPage />;
+      case SidebarTab.DIRECTORY:
+        return <DirectoryPage />;
       default:
-        return <ChatLayout user={user ?? null} />;
+        return <ChatPage user={user ?? null} />;
     }
   };
 
@@ -101,9 +96,10 @@ export default function AppLayout() {
     };
 
     fetchUser();
+    attendance();
   }, []);
 
-  const {ready} = useAppWs()
+  const { ready } = useAppWs()
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-white">

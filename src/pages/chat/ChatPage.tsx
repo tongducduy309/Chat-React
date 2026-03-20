@@ -1,24 +1,23 @@
 import { use, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { deleteForMe, getAllConversationsByUserId, getConversationById, getDetailConversationById, readMessage, searchMessage, sendMessage } from "../../features/chat/chat.api";
+import { deleteForMe, getAllConversationsByUserId, getConversationById, getDetailConversationById, getDetailConversationTemp, readMessage, searchMessage, sendMessage } from "../../features/chat/chat.api";
 import { type MessageRes, type DetailConversationRes, type ConversationRes, type ConversationMember, MessageType, type ConversationCreate, type ReadMessageRes, type MessageSearchRes, type NameUpdateRes, ConversationType } from "../../features/chat/chat.types";
 import { useChatWs } from "../../features/chat/useChatWs";
 import type { User } from "../../features/user/user.type";
-import ConversationList from "../chat/ConversationList";
-import { getProfile } from "../../features/user/user.api";
-import { ChatComposer } from "../chat/ChatComposer";
-import MessageBubble from "../chat/MessageBubble";
+import ConversationList from "../../components/chat/ConversationList";
+import { ChatComposer } from "../../components/chat/ChatComposer";
+import MessageBubble from "../../components/chat/MessageBubble";
 import { useVoiceCall } from "@/features/call/useVoiceCall";
-import { CallModal } from "../call/CallModal";
+import { CallModal } from "../../components/call/CallModal";
 import type { CallRes } from "@/features/call/call.types";
-import ConversationHeader from "../chat/ConversationHeader";
-import MessageSearchResults from "../chat/MessageSearchResults";
-import NicknameList from "../chat/NicknameList";
-import MembersList from "../chat/MembersList";
-import TitleAvatarList from "../chat/TitleAvatarGroup";
-import { FriendshipStatus, type UpdateFriendshipRes } from "@/features/friendship/friendship.type";
+import ConversationHeader from "../../components/chat/ConversationHeader";
+import MessageSearchResults from "../../components/chat/MessageSearchResults";
+import NicknameList from "../../components/chat/NicknameList";
+import MembersList from "../../components/chat/MembersList";
+import TitleAvatarList from "../../components/chat/TitleAvatarGroup";
+import { type UpdateFriendshipRes } from "@/features/friendship/friendship.type";
 import { App } from "antd";
-
-interface ChatLayoutProps {
+import { useSearchParams } from "react-router-dom";
+interface ChatPageProps {
   user: User | null;
 }
 
@@ -76,12 +75,12 @@ function updateMessagesAfterDelete(
     });
 }
 
-export default function ChatLayout({ user }: ChatLayoutProps) {
+export default function ChatPage({ user }: ChatPageProps) {
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [text, setText] = useState("");
   const [messages, setMessages] = useState<MessageRes[]>([]);
   const [conversation, setConversation] = useState<DetailConversationRes>();
-  
+
   const [conversations, setConversations] = useState<ConversationRes[]>([]);
   const [replyTo, setReplyTo] = useState<{ id: number; senderName?: string; content: string } | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -95,8 +94,15 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
   const [openMembers, setOpenMembers] = useState(false);
   const [openTitleAvatar, setOpenTitleAvatar] = useState(false);
 
-  const {notification} = App.useApp();
+  const { notification } = App.useApp();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const userIdParam = searchParams.get("userId");
+  const conversationIdParam = searchParams.get("conversationId");
+
+  const userIdNumber = userIdParam ? Number(userIdParam) : null;
+  const conversationIdNumber = conversationIdParam ? Number(conversationIdParam) : null;
 
 
 
@@ -203,24 +209,31 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
   }, [conversationId]);
 
   const onUpdateFriendship = useCallback(async (u: UpdateFriendshipRes) => {
-    if (!conversation || conversation.type!== ConversationType.DIRECT) return;
-    if (u.targetUserId!==conversation?.targetUserId) return;
+    if (!conversation || conversation.type !== ConversationType.DIRECT) return;
+    if (u.targetUserId !== conversation?.targetUserId) return;
 
-    await getDetailConversationById(conversationId??-1).then((res: DetailConversationRes) => {
+    if (conversationId){
+      await getDetailConversationById(conversationId ).then((res: DetailConversationRes) => {
       setConversation(res);
     });
+    }
+    else {
+      await getDetailConversationTemp(conversation?.targetUserId ?? -1).then((res: DetailConversationRes) => {
+      setConversation(res);
+    });
+    }
   }, [conversation]);
 
 
 
   const { ready, sendRaw, subscribeRaw } = useChatWs({
-  onMessage,
-  onCall,
-  onConversationCreate,
-  onReadMessage,
-  onNameUpdate,
-  onUpdateFriendship,
-});
+    onMessage,
+    onCall,
+    onConversationCreate,
+    onReadMessage,
+    onNameUpdate,
+    onUpdateFriendship,
+  });
 
 
 
@@ -232,8 +245,12 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
       conversationId: conversationId ?? null,
       content: text,
       replyToId: replyTo?.id ?? null,
-    }).then((res) => {
-
+      receiverId: conversation?.targetUserId
+    }).then((res: MessageRes) => {
+      if (!conversationIdNumber){
+        searchParams.set("conversationId", res?.conversationId?.toString() ?? "");
+        setSearchParams(searchParams);
+      }
       setText("");
       setReplyTo(null);
 
@@ -267,6 +284,47 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
     });
   };
 
+  useEffect(() => {
+    // console.log("openConversation", conversationIdNumber, userIdNumber);
+    
+    const getDetail = async ()=>{
+      setConversationId(conversationIdNumber??null);
+      if (conversationIdNumber) {
+      
+      setConversations((prev) => {
+        const index = prev.findIndex((c) => c.id === conversationIdNumber);
+        if (index !== -1) {
+          const updated = { ...prev[index], skipMessages: 0 };
+          return [...prev.slice(0, index), updated, ...prev.slice(index + 1)];
+        }
+        return prev;
+      });
+    } else {
+      await getDetailConversationTemp(userIdNumber ?? -1).then((res: DetailConversationRes) => {
+        setConversation(res);
+        // res.members.forEach((member) => {
+        //   if (member.user?.id !== user?.id) {
+        //     if (map.has(member.lastReadMessageId ?? -1)) {
+        //       map.set(member.lastReadMessageId ?? -1, [...map.get(member.lastReadMessageId ?? -1) ?? [], member]);
+        //     } else {
+        //       map.set(member.lastReadMessageId ?? -1, [member]);
+        //     }
+        //   }
+        // });
+        // const messages: MessageRes[] = res.messages.map((message) => {
+        //   return {
+        //     ...message,
+        //     membersReadMessage: map.has(message.id ?? -1) ? map.get(message.id ?? -1) : [],
+        //   };
+        // });
+        setMessages([]);
+      });
+    }
+    }
+
+    if (conversationIdNumber || userIdNumber) getDetail();
+  }, [userIdNumber,conversationIdNumber]);
+
 
 
 
@@ -276,8 +334,9 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
   }, [messages]);
 
   const fetchMessages = async () => {
+
     if (conversationId) {
-      await getDetailConversationById(conversationId).then((res) => {
+      await getDetailConversationById(conversationId ?? -1).then((res: DetailConversationRes) => {
         setConversation(res);
         let map = new Map<number, ConversationMember[]>();
         res.members.forEach((member) => {
@@ -298,6 +357,7 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
         setMessages(messages);
       });
     }
+
   };
 
   useEffect(() => {
@@ -306,7 +366,7 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
     fetchMessages();
   }, [conversationId]);
 
-  
+
 
 
 
@@ -367,104 +427,92 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
       {/* <h2>Tài khoản: {user?.displayName} - Id:{user?.id} - WS: {ready ? "CONNECTED" : "DISCONNECTED"}</h2> */}
 
       <div className="flex items-start w-full h-full gap-2">
-  <ConversationList
-    conversations={conversations}
-    userId={user?.id??-1}
-    handleConversationClick={(id) => {
-      
-      setConversationId(id);
-      setConversations((prev) =>
-      {
-        const index = prev.findIndex((c) => c.id === id);
-        if (index !== -1) {
-          const updated = { ...prev[index], skipMessages: 0 };
-          return [...prev.slice(0, index), updated, ...prev.slice(index + 1)];
-        }
-        return prev;
-      });
-    }}
-    onSearchResults={(results) => setConversations(results)}
-  />
-
-  {conversation && (
-    <div
-      className="flex h-full w-full flex-col rounded-2xl border border-[#eee] overflow-hidden"
-    >
-      <div className="shrink-0">
-        <ConversationHeader
-          title={conversation.title ?? "Cuộc trò chuyện"}
-          avatarUrl={conversation?.avatarUrl ?? null}
-          subtitle=""
-          type={conversation?.type}
-          role={conversation?.role}
-          onCall={() => {
-            
-            startCall();
-          }}
-          onVideoCall={() => {
-            // startCall();
-          }}
-          onOpenSearch={() => {
-            setSearchMessageOpen(true);
-          }}
-          onOpenNickname={() => setOpenNickname(true)}
-          onOpenMembers={() => setOpenMembers(true)}
-          onOpenTitleAvatar={() => setOpenTitleAvatar(true)}
-          friendshipStatus={conversation.friendshipStatus}
-          targetUserId={conversation.targetUserId??-1}
+        <ConversationList
+          conversations={conversations}
+          userId={user?.id ?? -1}
+          onSearchResults={(results) => setConversations(results)}
         />
-      </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        {messages.map((m) => (
+        {conversation && (
           <div
-            key={m.id}
-            ref={(node) => {
-              if (!m.id) return;
-              if (node) messageRefs.current.set(m.id, node);
-              else messageRefs.current.delete(m.id);
-            }}
-            className={[
-              "rounded-xl border p-2 transition-colors",
-              highlightId === m.id ? "reply-flash" : "border-transparent",
-            ].join(" ")}
+            className="flex h-full w-full flex-col rounded-2xl border border-[#eee] overflow-hidden"
           >
-            <MessageBubble
-              message={m}
-              userId={user?.id}
-              onReplyClick={(msg) =>
-                setReplyTo({
-                  id: msg.id!,
-                  senderName: msg.senderNickname,
-                  content: msg.content,
-                })
-              }
-              onReplyJump={(replyToId) => scrollToMessage(replyToId)}
-              onDeleteForMe={(messageId) => handleDeleteForMe(messageId)}
-              membersReadMessage={m.membersReadMessage}
-            />
+            <div className="shrink-0">
+              <ConversationHeader
+                title={conversation.title ?? "Cuộc trò chuyện"}
+                avatarUrl={conversation?.avatarUrl ?? null}
+                subtitle=""
+                type={conversation?.type}
+                role={conversation?.role}
+                onCall={() => {
+
+                  startCall();
+                }}
+                onVideoCall={() => {
+                  // startCall();
+                }}
+                onOpenSearch={() => {
+                  setSearchMessageOpen(true);
+                }}
+                onOpenNickname={() => setOpenNickname(true)}
+                onOpenMembers={() => setOpenMembers(true)}
+                onOpenTitleAvatar={() => setOpenTitleAvatar(true)}
+                friendshipStatus={conversation.friendshipStatus}
+                targetUserId={conversation.targetUserId ?? -1}
+                conversationId={conversationId}
+              />
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  ref={(node) => {
+                    if (!m.id) return;
+                    if (node) messageRefs.current.set(m.id, node);
+                    else messageRefs.current.delete(m.id);
+                  }}
+                  className={[
+                    "rounded-xl border p-2 transition-colors",
+                    highlightId === m.id ? "reply-flash" : "border-transparent",
+                  ].join(" ")}
+                >
+                  <MessageBubble
+                    message={m}
+                    userId={user?.id}
+                    onReplyClick={(msg) =>
+                      setReplyTo({
+                        id: msg.id!,
+                        senderName: msg.senderNickname,
+                        content: msg.content,
+                      })
+                    }
+                    onReplyJump={(replyToId) => scrollToMessage(replyToId)}
+                    onDeleteForMe={(messageId) => handleDeleteForMe(messageId)}
+                    membersReadMessage={m.membersReadMessage}
+                  />
+                </div>
+              ))}
+
+              <div ref={bottomRef} />
+            </div>
+
+            <div className="shrink-0 border-t bg-white p-3">
+              <ChatComposer
+                value={text}
+                onChange={setText}
+                onSend={handleSend}
+                replyTo={replyTo}
+                onCancelReply={() => setReplyTo(null)}
+                disabled={!canSend}
+                friendshipStatus={conversation.friendshipStatus}
+                targetUserId={conversation.targetUserId ?? -1}
+                type={conversation.type}
+              />
+            </div>
           </div>
-        ))}
-
-        <div ref={bottomRef} />
+        )}
       </div>
-
-      <div className="shrink-0 border-t bg-white p-3">
-        <ChatComposer
-          value={text}
-          onChange={setText}
-          onSend={handleSend}
-          replyTo={replyTo}
-          onCancelReply={() => setReplyTo(null)}
-          disabled={!canSend}
-          friendshipStatus={conversation.friendshipStatus}
-          targetUserId={conversation.targetUserId??-1}
-          type={conversation.type}
-        />
-      </div>
-    </div>
-  )}
-</div>
 
       <CallModal
         open={callOpen}
@@ -515,9 +563,9 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
         items={
           conversation?.members?.map((member) => ({
             id: member.user?.id ?? 0,
-            displayName: member.user?.id===user?.id?"Bạn":member.user?.displayName,
+            displayName: member.user?.id === user?.id ? "Bạn" : member.user?.displayName,
             avatarUrl: member.user?.avatarUrl,
-            
+
             addByDisplayName: member.addByUser?.displayName,
             role: member.role,
           })) ?? []
@@ -532,10 +580,10 @@ export default function ChatLayout({ user }: ChatLayoutProps) {
         open={openTitleAvatar}
         onOpenChange={setOpenTitleAvatar}
         item={{
-            title: conversation?.title ?? "Cuộc trò chuyện",
-            avatarUrl: conversation?.avatarUrl ?? undefined,
-            conversationId: conversationId ?? -1,
-          }}
+          title: conversation?.title ?? "Cuộc trò chuyện",
+          avatarUrl: conversation?.avatarUrl ?? undefined,
+          conversationId: conversationId ?? -1,
+        }}
       />
     </div>
 

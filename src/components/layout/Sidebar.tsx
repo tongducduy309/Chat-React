@@ -1,143 +1,278 @@
 import { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-    MessageCircleMore,
-    ContactRound,
-    Cloud,
-    Settings,
-    Calendar,
+  MessageCircleMore,
+  ContactRound,
+  Cloud,
+  Settings,
+  Calendar,
+  Building2,
+  Mail,
+  BadgeCheck,
+  BriefcaseBusiness,
+  IdCard,
 } from "lucide-react";
-import { Card, CardDescription, CardHeader, CardTitle } from "../ui/card";
+import { Card, CardContent } from "../ui/card";
 import type { User } from "@/features/user/user.type";
 import { useEffect, useRef, useState } from "react";
-import { Badge } from 'antd';
+import { Badge } from "antd";
 import { Separator } from "../ui/separator";
 
-
 export const SidebarTab = {
-    CHAT: "CHAT",
-    CONTACT: "CONTACT",
-    CLOUD: "CLOUD",
-    CALENDAR: "CALENDAR",
-    SETTING: "SETTING",
+  CHAT: "CHAT",
+  CONTACT: "CONTACT",
+  CLOUD: "CLOUD",
+  CALENDAR: "CALENDAR",
+  SETTING: "SETTING",
+  DIRECTORY: "DIRECTORY",
 } as const;
 
-export type SidebarTab =
-    (typeof SidebarTab)[keyof typeof SidebarTab];
+export type SidebarTab = (typeof SidebarTab)[keyof typeof SidebarTab];
 
 interface Props {
-    user: User | null;
-    activeTab: SidebarTab;
-    skipNotifications: Map<SidebarTab, number>;
-    onChangeTab: (tab: SidebarTab) => void;
-    activeUser: boolean;
-};
-
-function NavButton({
-    active,
-    onClick,
-    icon,
-}: {
-    active?: boolean;
-    onClick?: () => void;
-    icon: React.ReactNode;
-}) {
-    return (
-        <button
-            onClick={onClick}
-            className={`flex h-12 w-12 items-center justify-center rounded-xl transition ${active
-                ? "bg-white/15 text-white"
-                : "text-white/85 hover:bg-white/10"
-                }`}
-        >
-            {icon}
-        </button>
-    );
+  user: User | null;
+  activeTab: SidebarTab;
+  skipNotifications: Map<SidebarTab, number>;
+  onChangeTab: (tab: SidebarTab) => void;
+  activeUser: boolean;
 }
 
-export default function Sidebar({ activeTab, onChangeTab, user, skipNotifications, activeUser }: Props) {
-    const [openSettingProfile, setOpenSettingProfile] = useState(false);
-    const avatarRef = useRef<HTMLDivElement>(null);
-    const fallback = user?.displayName?.trim()?.charAt(0)?.toUpperCase() ?? "C";
-    useEffect(() => {
-        function handleClickOutside(event: MouseEvent) {
-            if (!avatarRef.current) return;
+function NavButton({
+  active,
+  onClick,
+  icon,
+  title,
+}: {
+  active?: boolean;
+  onClick?: () => void;
+  icon: React.ReactNode;
+  title?: string;
+}) {
+  return (
+    <button
+      title={title}
+      onClick={onClick}
+      className={`flex h-12 w-12 items-center justify-center rounded-xl transition ${
+        active
+          ? "bg-white/15 text-white"
+          : "text-white/85 hover:bg-white/10"
+      }`}
+    >
+      {icon}
+    </button>
+  );
+}
 
-            if (!avatarRef.current.contains(event.target as Node)) {
-                setOpenSettingProfile(false);
-            }
-        }
+function ProfileInfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value?: string | number | null;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-lg px-2 py-2 hover:bg-muted/50">
+      <div className="mt-0.5 text-muted-foreground">{icon}</div>
+      <div className="min-w-0 flex-1">
+        <div className="text-xs text-muted-foreground">{label}</div>
+        <div className="truncate text-sm font-medium text-foreground">
+          {value || "Chưa cập nhật"}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-        document.addEventListener("mousedown", handleClickOutside);
+export default function Sidebar({
+  activeTab,
+  onChangeTab,
+  user,
+  skipNotifications,
+  activeUser,
+}: Props) {
+  const [openSettingProfile, setOpenSettingProfile] = useState(false);
+  const avatarRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, []);
-    return (
-        <div>
-            <div className="flex h-full w-[72px] flex-col items-center bg-[#005AE0] py-3">
-                <Avatar ref={avatarRef} className="h-12 w-12 overflow-visible" onClick={() => setOpenSettingProfile(true)}>
-                    <AvatarImage src={user?.avatarUrl} />
-                    <AvatarFallback>{fallback}</AvatarFallback>
-                   
-                    <AvatarBadge className={activeUser ? "bg-green-600 dark:bg-green-800" : "bg-gray-400 dark:bg-gray-300"} />
-                </Avatar>
+  const fallback = user?.displayName?.trim()?.charAt(0)?.toUpperCase() ?? "C";
 
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
 
-                <div className="mt-5 flex flex-1 flex-col items-center gap-3">
-                    <Badge count={skipNotifications.get(SidebarTab.CHAT) || 0} overflowCount={99}>
-                        <NavButton
-                            active={activeTab === SidebarTab.CHAT}
-                            onClick={() => onChangeTab(SidebarTab.CHAT)}
-                            icon={<MessageCircleMore className="h-6 w-6" />}
-                        />
-                    </Badge>
+      if (
+        avatarRef.current?.contains(target) ||
+        cardRef.current?.contains(target)
+      ) {
+        return;
+      }
 
-                    <NavButton
-                        active={activeTab === SidebarTab.CONTACT}
-                        onClick={() => onChangeTab(SidebarTab.CONTACT)}
-                        icon={<ContactRound className="h-6 w-6" />}
-                    />
+      setOpenSettingProfile(false);
+    }
 
-                    <NavButton
-                        active={activeTab === SidebarTab.CALENDAR}
-                        onClick={() => onChangeTab(SidebarTab.CALENDAR)}
-                        icon={<Calendar className="h-6 w-6" />}
-                    />
-                </div>
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
-                <div className="flex flex-col items-center gap-3">
-                    <NavButton
-                        active={activeTab === SidebarTab.CLOUD}
-                        onClick={() => onChangeTab(SidebarTab.CLOUD)}
-                        icon={<Cloud className="h-6 w-6" />}
-                    />
-                    <NavButton
-                        active={activeTab === SidebarTab.SETTING}
-                        onClick={() => onChangeTab(SidebarTab.SETTING)}
-                        icon={<Settings className="h-6 w-6" />}
-                    />
-                </div>
+  return (
+    <div className="relative">
+      <div className="flex h-full w-[72px] flex-col items-center bg-[#005AE0] py-3">
+        <div ref={avatarRef} className="relative inline-block">
+          <Avatar
+            className="h-12 w-12 cursor-pointer overflow-visible"
+            onClick={() => setOpenSettingProfile((prev) => !prev)}
+          >
+            <AvatarImage src={user?.avatarUrl} />
+            <AvatarFallback>{fallback}</AvatarFallback>
+            <AvatarBadge
+              className={
+                activeUser
+                  ? "bg-green-600 dark:bg-green-800"
+                  : "bg-gray-400 dark:bg-gray-300"
+              }
+            />
+          </Avatar>
 
-                {
-                    openSettingProfile && (
-                        <Card className="absolute top-0 left-[75px] w-[170px] z-10">
-                            <CardHeader>
-                                <CardTitle>{user?.displayName}</CardTitle>
-                                <Separator />
-                                <CardDescription>MNV: {user?.userCode}</CardDescription>
-                            </CardHeader>
-                            {/* <CardContent>
-                                <p>Card Content</p>
-                            </CardContent>
-                            <CardFooter>
-                                <p>Card Footer</p>
-                            </CardFooter> */}
-                        </Card>
-                    )
-                }
-            </div>
 
         </div>
-    );
+
+        <div className="mt-5 flex flex-1 flex-col items-center gap-3">
+          <Badge
+            count={skipNotifications.get(SidebarTab.CHAT) || 0}
+            overflowCount={99}
+          >
+            <NavButton
+              title="Tin nhắn"
+              active={activeTab === SidebarTab.CHAT}
+              onClick={() => onChangeTab(SidebarTab.CHAT)}
+              icon={<MessageCircleMore className="h-6 w-6" />}
+            />
+          </Badge>
+
+          <NavButton
+            title="Danh bạ"
+            active={activeTab === SidebarTab.CONTACT}
+            onClick={() => onChangeTab(SidebarTab.CONTACT)}
+            icon={<ContactRound className="h-6 w-6" />}
+          />
+
+          <NavButton
+            title="Lịch và sự kiện"
+            active={activeTab === SidebarTab.CALENDAR}
+            onClick={() => onChangeTab(SidebarTab.CALENDAR)}
+            icon={<Calendar className="h-6 w-6" />}
+          />
+
+          <NavButton
+            title="Phòng ban"
+            active={activeTab === SidebarTab.DIRECTORY}
+            onClick={() => onChangeTab(SidebarTab.DIRECTORY)}
+            icon={<Building2 className="h-6 w-6" />}
+          />
+        </div>
+
+        <div className="flex flex-col items-center gap-3">
+          <NavButton
+            active={activeTab === SidebarTab.CLOUD}
+            onClick={() => onChangeTab(SidebarTab.CLOUD)}
+            icon={<Cloud className="h-6 w-6" />}
+            title="Cloud"
+          />
+          <NavButton
+            active={activeTab === SidebarTab.SETTING}
+            onClick={() => onChangeTab(SidebarTab.SETTING)}
+            icon={<Settings className="h-6 w-6" />}
+            title="Cài đặt"
+          />
+        </div>
+      </div>
+
+      {openSettingProfile && (
+        <div
+          ref={cardRef}
+          className="absolute top-2 left-[84px] z-20"
+        >
+          <Card className="w-[320px] rounded-2xl border shadow-xl pt-0">
+            
+            <CardContent className="p-0">
+              <div className="rounded-t-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-5 text-white">
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <Avatar className="h-16 w-16 border-2 border-white/60">
+                      <AvatarImage src={user?.avatarUrl} />
+                      <AvatarFallback className="text-lg">
+                        {fallback}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span
+                      className={`absolute right-0 bottom-0 h-4 w-4 rounded-full border-2 border-white ${
+                        activeUser ? "bg-green-500" : "bg-gray-300"
+                      }`}
+                    />
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="truncate text-lg font-semibold">
+                      {user?.displayName || "Chưa có tên"}
+                    </div>
+                    <div className="mt-1 text-sm text-white/85">
+                      {activeUser ? "Đang hoạt động" : "Không hoạt động"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4">
+                <div className="mb-3 text-sm font-semibold text-foreground">
+                  Thông tin cá nhân
+                </div>
+
+                <div className="space-y-1">
+                  <ProfileInfoRow
+                    icon={<IdCard className="h-4 w-4" />}
+                    label="Mã nhân viên"
+                    value={user?.userCode}
+                  />
+
+                  <ProfileInfoRow
+                    icon={<Mail className="h-4 w-4" />}
+                    label="Email"
+                    value={user?.email}
+                  />
+
+                  <ProfileInfoRow
+                    icon={<Building2 className="h-4 w-4" />}
+                    label="Phòng ban"
+                    value={user?.departmentName}
+                  />
+
+                  <ProfileInfoRow
+                    icon={<BriefcaseBusiness className="h-4 w-4" />}
+                    label="Chức vụ"
+                    value={user?.positionName}
+                  />
+
+                  <ProfileInfoRow
+                    icon={<BadgeCheck className="h-4 w-4" />}
+                    label="Trạng thái"
+                    value={activeUser ? "Online" : "Offline"}
+                  />
+                </div>
+
+                <Separator className="my-4" />
+
+                <div className="text-xs leading-5 text-muted-foreground">
+                  Thông tin này dùng để nhận diện tài khoản và hiển thị trong hệ
+                  thống trò chuyện nội bộ.
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
 }

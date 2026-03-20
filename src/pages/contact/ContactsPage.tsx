@@ -1,4 +1,4 @@
-export const ContactsLayout = () => {
+export const ContactsPage = () => {
   return (
     <div>
       <h1>Contacts</h1>

@@ -26,6 +26,7 @@ type Props = {
   onOpenTitleAvatar?: () => void;
   friendshipStatus?: FriendshipStatus;
   targetUserId: number;
+  conversationId: number|null;
 };
 
 function getFriendshipStatusLabel(status?: FriendshipStatus | null) {
@@ -103,7 +104,8 @@ export default function ConversationHeader({
   onOpenMembers,
   onOpenTitleAvatar,
   friendshipStatus,
-  targetUserId
+  targetUserId,
+  conversationId
 }: Props) {
   const fallback = title?.trim()?.charAt(0)?.toUpperCase() ?? "C";
   const { confirm, ConfirmDialog } = useConfirmDialog();
@@ -269,7 +271,7 @@ export default function ConversationHeader({
                   <DropdownMenuItem title="Tên nhóm, Ảnh đại diện" onClick={onOpenTitleAvatar}><PenLine />Tên nhóm, Ảnh đại diện</DropdownMenuItem>
                 )}
                 {
-                  !isBlocked && (
+                  !isBlocked&&conversationId && (
                     <DropdownMenuItem title="Biệt danh" onClick={onOpenNickname}><UserRoundPen />Biệt danh</DropdownMenuItem>
                   )
                 }
