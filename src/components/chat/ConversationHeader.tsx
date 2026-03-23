@@ -11,6 +11,7 @@ import { acceptFriendRequest, blockUser, cancelFriendRequest, rejectFriendReques
 import { Notify } from "@/lib/notify";
 import type { ResponseObject } from "@/lib/ResponseObject";
 import { App } from "antd";
+import { isOnline } from "@/features/user/user.api";
 
 type Props = {
   title: string;
@@ -18,6 +19,7 @@ type Props = {
   avatarUrl?: string | null;
   subtitle?: string;
   role?: MemberRole;
+  activeUser?: boolean;
   onCall?: () => void;
   onVideoCall?: () => void;
   onOpenSearch?: () => void;
@@ -26,7 +28,7 @@ type Props = {
   onOpenTitleAvatar?: () => void;
   friendshipStatus?: FriendshipStatus;
   targetUserId: number;
-  conversationId: number|null;
+  conversationId: number | null;
 };
 
 function getFriendshipStatusLabel(status?: FriendshipStatus | null) {
@@ -67,7 +69,7 @@ interface getFriendshipStatusActionProps {
   handleRejectFriendRequest?: () => void;
 }
 
-function getFriendshipStatusAction({status, handleSendFriendRequest, handleAcceptFriendRequest, handleCancelFriendRequest, handleRejectFriendRequest}: getFriendshipStatusActionProps): ReactNode {
+function getFriendshipStatusAction({ status, handleSendFriendRequest, handleAcceptFriendRequest, handleCancelFriendRequest, handleRejectFriendRequest }: getFriendshipStatusActionProps): ReactNode {
   switch (status) {
     case FriendshipStatus.SENT:
       return <Button onClick={handleCancelFriendRequest} variant="outline" size="sm" className="border-gray-500 text-gray-500 hover:bg-gray-50 hover:text-gray-500">
@@ -76,11 +78,11 @@ function getFriendshipStatusAction({status, handleSendFriendRequest, handleAccep
     case FriendshipStatus.RECEIVED:
       return <div className="flex items-center gap-2">
         <Button onClick={handleAcceptFriendRequest} variant="outline" size="sm" className="border-green-500 text-green-500 hover:bg-green-50 hover:text-green-500">
-        Chấp nhận
-      </Button>
-      <Button onClick={handleRejectFriendRequest} variant="outline" size="sm" className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-500">
-        Từ chối
-      </Button>
+          Chấp nhận
+        </Button>
+        <Button onClick={handleRejectFriendRequest} variant="outline" size="sm" className="border-red-500 text-red-500 hover:bg-red-50 hover:text-red-500">
+          Từ chối
+        </Button>
       </div>;
     case FriendshipStatus.NONE:
       return <Button onClick={handleSendFriendRequest} variant="outline" size="sm" className="border-blue-500 text-blue-500 hover:bg-blue-50 hover:text-blue-500">
@@ -111,6 +113,7 @@ export default function ConversationHeader({
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const { notification } = App.useApp();
   const [currentFriendshipStatus, setCurrentFriendshipStatus] = useState<FriendshipStatus>(friendshipStatus ?? FriendshipStatus.NONE);
+  const [activeUser, setActiveUser] = useState<boolean>(false);
 
   const handleDeleteConversation = async () => {
     const ok = await confirm({
@@ -214,12 +217,24 @@ export default function ConversationHeader({
   };
 
   const isBlocked = useMemo(() => {
-      return friendshipStatus === FriendshipStatus.BLOCKED || friendshipStatus === FriendshipStatus.BE_BLOCKED;
-    }, [friendshipStatus]);
+    return friendshipStatus === FriendshipStatus.BLOCKED || friendshipStatus === FriendshipStatus.BE_BLOCKED;
+  }, [friendshipStatus]);
 
   useEffect(() => {
-    setCurrentFriendshipStatus(friendshipStatus??FriendshipStatus.NONE);
+    setCurrentFriendshipStatus(friendshipStatus ?? FriendshipStatus.NONE);
   }, [friendshipStatus]);
+
+  useEffect(() => {
+    if (type !== ConversationType.DIRECT || currentFriendshipStatus!==FriendshipStatus.ACCEPTED) return;
+    const checkActiveUser = async () => {
+      const activeUser = await isOnline(targetUserId);
+      setActiveUser(activeUser);
+    };
+    checkActiveUser();
+    const interval = setInterval(() => {
+      checkActiveUser();
+    }, 90000);
+  }, [targetUserId, currentFriendshipStatus]);
 
 
 
@@ -234,7 +249,20 @@ export default function ConversationHeader({
 
           <div className="leading-tight">
             <div className="text-base font-semibold text-slate-900">{title}</div>
-            {subtitle ? <div className="text-xs text-slate-500">{subtitle}</div> : null}
+
+            {type === ConversationType.DIRECT && currentFriendshipStatus===FriendshipStatus.ACCEPTED ? (
+              <div className="mt-0.5 flex items-center gap-2 text-xs">
+                <span
+                  className={`inline-block h-2 w-2 rounded-full ${activeUser ? "bg-green-500" : "bg-slate-400"
+                    }`}
+                />
+                <span className={activeUser ? "text-green-600" : "text-slate-500"}>
+                  {activeUser ? "Đang hoạt động" : "Offline"}
+                </span>
+              </div>
+            ) : subtitle ? (
+              <div className="text-xs text-slate-500">{subtitle}</div>
+            ) : null}
           </div>
         </div>
 
@@ -271,7 +299,7 @@ export default function ConversationHeader({
                   <DropdownMenuItem title="Tên nhóm, Ảnh đại diện" onClick={onOpenTitleAvatar}><PenLine />Tên nhóm, Ảnh đại diện</DropdownMenuItem>
                 )}
                 {
-                  !isBlocked&&conversationId && (
+                  !isBlocked && conversationId && (
                     <DropdownMenuItem title="Biệt danh" onClick={onOpenNickname}><UserRoundPen />Biệt danh</DropdownMenuItem>
                   )
                 }
@@ -304,7 +332,7 @@ export default function ConversationHeader({
               {getFriendshipStatusIcon(currentFriendshipStatus)}
               {getFriendshipStatusLabel(currentFriendshipStatus)}
             </div>
-            {getFriendshipStatusAction({status: currentFriendshipStatus, handleSendFriendRequest, handleAcceptFriendRequest, handleCancelFriendRequest, handleRejectFriendRequest})}
+            {getFriendshipStatusAction({ status: currentFriendshipStatus, handleSendFriendRequest, handleAcceptFriendRequest, handleCancelFriendRequest, handleRejectFriendRequest })}
           </div>
         )
       }

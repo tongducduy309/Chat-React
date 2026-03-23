@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ChatPage from "../../pages/chat/ChatPage";
 import Sidebar from "./Sidebar";
 import type { User } from "@/features/user/user.type";
-import { getProfile } from "@/features/user/user.api";
+import { getProfile, verifyUser } from "@/features/user/user.api";
 import { ContactsPage } from "../../pages/contact/ContactsPage";
 import CalendarPage from "../../pages/calendar/CalendarPage";
 import { Toaster } from "../ui/sonner";
@@ -14,6 +14,7 @@ import { Button } from "../ui/button";
 import { useAppWs } from "@/features/app/useAppWs";
 import { SidebarTab } from "./Sidebar";
 import { DirectoryPage } from "@/pages/directory/DirectoryPage";
+import FaceRegisterDialog from "../auth/FaceRegisterDialog";
 
 const TAB_TO_PATH: Record<SidebarTab, string> = {
   CHAT: "/chat",
@@ -40,6 +41,7 @@ export default function AppLayout() {
 
   const [user, setUser] = useState<User>();
   const [openAttendance, setOpenAttendance] = useState(false);
+  const [openFaceRegister, setOpenFaceRegister] = useState(false);
 
   const activeTab = useMemo<SidebarTab>(() => {
     return PATH_TO_TAB[location.pathname] ?? SidebarTab.CHAT;
@@ -67,7 +69,36 @@ export default function AppLayout() {
     }
   };
 
-  const attendance = async () => {
+  
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const user = await getProfile();
+      setUser(user);
+      if (!user.verified) {
+        notification.warning({
+          title: "Xác thực",
+          description: "Bạn chưa xác thực tài khoản.",
+          duration: 0,
+          actions: (
+            <Button
+              onClick={() => {
+                setOpenFaceRegister(true);
+                notification.destroy();
+              }}
+              className="bg-yellow-500 text-white hover:bg-yellow-300"
+            >
+              Xác thực ngay
+            </Button>
+          ),
+        });
+      }
+      else{
+        attendance();
+      }
+    };
+
+    const attendance = async () => {
     const res = await checkTodayAttendance();
     if (!res.data) {
       notification.warning({
@@ -88,15 +119,7 @@ export default function AppLayout() {
       });
     }
   };
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      const user = await getProfile();
-      setUser(user);
-    };
-
     fetchUser();
-    attendance();
   }, []);
 
   const { ready } = useAppWs()
@@ -118,6 +141,13 @@ export default function AppLayout() {
         onClose={() => setOpenAttendance(false)}
         onSuccess={() => {
           setOpenAttendance(false);
+        }}
+      />
+      <FaceRegisterDialog
+        open={openFaceRegister}
+        onClose={() => setOpenFaceRegister(false)}
+        onSuccess={() => {
+          setOpenFaceRegister(false);
         }}
       />
     </div>

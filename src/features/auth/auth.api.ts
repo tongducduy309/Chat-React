@@ -10,7 +10,7 @@ export async function faceLogin(file: File | Blob): Promise<LoginRes>  {
   return data.data;
 }
 
-export async function faceRegister(file: File | Blob): Promise<void> {
+export async function registerFace(file: File | Blob): Promise<void> {
   const formData = new FormData();
   formData.append("file", file, "attendance.jpg");
 

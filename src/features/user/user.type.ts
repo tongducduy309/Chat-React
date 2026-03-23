@@ -11,5 +11,6 @@ export interface User {
     status: UserStatus;
     departmentName?: string;
     positionName?: string;
+    verified: boolean;
 }
 

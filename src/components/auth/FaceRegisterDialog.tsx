@@ -2,20 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { App, Button, Modal, Space, Typography} from "antd";
 import { Camera, RefreshCcw } from "lucide-react";
 import { checkIn } from "@/features/attendance/attendance.api";
+import { registerFace } from "@/features/auth/auth.api";
 
 const { Text } = Typography;
 
-type AttendanceDialogProps = {
+type FaceRegisterDialogProps = {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 };
 
-export default function AttendanceDialog({
+export default function FaceRegisterDialog({
   open,
   onClose,
   onSuccess,
-}: AttendanceDialogProps) {
+}: FaceRegisterDialogProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -129,20 +130,21 @@ export default function AttendanceDialog({
     try {
       setSubmitting(true);
 
-      await checkIn(capturedBlob);
+      await registerFace(capturedBlob);
 
       notification.success({
-        message: "Điểm danh thành công",
-        description: "Bạn đã điểm danh bằng khuôn mặt thành công.",
+        message: "Đăng ký thành công",
+        description: "Bạn đã đăng ký khuôn mặt thành công.",
       });
 
       onSuccess?.();
+      
       handleClose();
     } catch (error: any) {
       const msg =
-        error?.response?.data?.message || "Điểm danh thất bại, vui lòng thử lại.";
+        error?.response?.data?.message || "Đăng ký thất bại, vui lòng thử lại.";
       notification.error({
-        message: "Điểm danh thất bại",
+        message: "Đăng ký thất bại",
         description: msg,
       });
       resetCapture()
@@ -178,7 +180,7 @@ export default function AttendanceDialog({
       open={open}
       onCancel={handleClose}
       footer={null}
-      title="Điểm danh bằng khuôn mặt"
+      title="Đăng ký khuôn mặt"
       centered
       destroyOnHidden
       width={560}
@@ -233,7 +235,7 @@ export default function AttendanceDialog({
                 onClick={handleSubmitAttendance}
                 loading={submitting}
               >
-                Xác nhận điểm danh
+                Xác nhận đăng ký
               </Button>
             </>
           )}

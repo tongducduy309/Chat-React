@@ -124,7 +124,7 @@ export default function FaceLoginDialog({
 
   const handleSubmit = async () => {
     if (!capturedBlob || loading) return;
-    await onSubmit?.(capturedBlob);
+    await onSubmit?.(capturedBlob)
   };
 
   useEffect(() => {
@@ -174,7 +174,7 @@ export default function FaceLoginDialog({
             </div>
           ) : null}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 justify-center">
             {!capturedBlob ? (
               <Button onClick={capturePhoto} disabled={cameraLoading || loading}>
                 {cameraLoading ? (
@@ -201,10 +201,6 @@ export default function FaceLoginDialog({
                 </Button>
               </>
             )}
-
-            <Button variant="outline" onClick={handleClose} disabled={loading}>
-              Đóng
-            </Button>
           </div>
         </div>
       </DialogContent>

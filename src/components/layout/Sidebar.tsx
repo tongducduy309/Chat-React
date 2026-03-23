@@ -10,12 +10,30 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   IdCard,
+  User,
+  KeyRound,
+  LogOut,
+  Cog,
 } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
-import type { User } from "@/features/user/user.type";
+import type { User as UserType } from "@/features/user/user.type";
 import { useEffect, useRef, useState } from "react";
 import { Badge } from "antd";
 import { Separator } from "../ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const SidebarTab = {
   CHAT: "CHAT",
@@ -29,11 +47,15 @@ export const SidebarTab = {
 export type SidebarTab = (typeof SidebarTab)[keyof typeof SidebarTab];
 
 interface Props {
-  user: User | null;
+  user: UserType | null;
   activeTab: SidebarTab;
   skipNotifications: Map<SidebarTab, number>;
   onChangeTab: (tab: SidebarTab) => void;
   activeUser: boolean;
+  onOpenProfile?: () => void;
+  onOpenAccountSettings?: () => void;
+  onChangePassword?: () => void;
+  onLogout?: () => void;
 }
 
 function NavButton({
@@ -90,6 +112,10 @@ export default function Sidebar({
   user,
   skipNotifications,
   activeUser,
+  onOpenProfile,
+  onOpenAccountSettings,
+  onChangePassword,
+  onLogout,
 }: Props) {
   const [openSettingProfile, setOpenSettingProfile] = useState(false);
   const avatarRef = useRef<HTMLDivElement>(null);
@@ -117,6 +143,14 @@ export default function Sidebar({
     };
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("current_user");
+    onLogout?.();
+    window.location.href = "/login";
+  };
+
   return (
     <div className="relative">
       <div className="flex h-full w-[72px] flex-col items-center bg-[#005AE0] py-3">
@@ -135,8 +169,6 @@ export default function Sidebar({
               }
             />
           </Avatar>
-
-
         </div>
 
         <div className="mt-5 flex flex-1 flex-col items-center gap-3">
@@ -181,22 +213,63 @@ export default function Sidebar({
             icon={<Cloud className="h-6 w-6" />}
             title="Cloud"
           />
-          <NavButton
-            active={activeTab === SidebarTab.SETTING}
-            onClick={() => onChangeTab(SidebarTab.SETTING)}
-            icon={<Settings className="h-6 w-6" />}
-            title="Cài đặt"
-          />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div>
+                <NavButton
+                  active={activeTab === SidebarTab.SETTING}
+                  onClick={() => {}}
+                  icon={<Settings className="h-6 w-6" />}
+                  title="Cài đặt"
+                />
+              </div>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              side="right"
+              align="end"
+              className="ml-3 w-56 rounded-xl"
+            >
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setOpenSettingProfile(true);
+                    onOpenProfile?.();
+                  }}
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Hồ sơ cá nhân
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={onOpenAccountSettings}>
+                  <Cog className="mr-2 h-4 w-4" />
+                  Cài đặt tài khoản
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={onChangePassword}>
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  Đổi mật khẩu
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-red-600 focus:text-red-600"
+              >
+                <LogOut className="mr-2 h-4 w-4 text-red-600" />
+                Đăng xuất
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
       {openSettingProfile && (
-        <div
-          ref={cardRef}
-          className="absolute top-2 left-[84px] z-20"
-        >
-          <Card className="w-[320px] rounded-2xl border shadow-xl pt-0">
-            
+        <div ref={cardRef} className="absolute top-2 left-[84px] z-20">
+          <Card className="w-[320px] rounded-2xl border pt-0 shadow-xl">
             <CardContent className="p-0">
               <div className="rounded-t-2xl bg-gradient-to-r from-blue-600 to-blue-500 px-5 py-5 text-white">
                 <div className="flex items-center gap-4">
@@ -215,9 +288,41 @@ export default function Sidebar({
                   </div>
 
                   <div className="min-w-0">
-                    <div className="truncate text-lg font-semibold">
+                    <div className="flex items-center gap-2 truncate text-lg font-semibold">
                       {user?.displayName || "Chưa có tên"}
+
+                      {user?.verified ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex cursor-pointer items-center gap-1 rounded-full bg-white/10 px-2 py-1">
+                                <BadgeCheck className="h-4 w-4 text-white" />
+                                <p className="text-sm text-white">Đã xác minh</p>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Đã định danh khuôn mặt
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex cursor-pointer items-center gap-1 rounded-full bg-white/10 px-2 py-1">
+                                <p className="text-sm text-white">
+                                  Chưa xác thực
+                                </p>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Chưa định danh khuôn mặt
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     </div>
+
                     <div className="mt-1 text-sm text-white/85">
                       {activeUser ? "Đang hoạt động" : "Không hoạt động"}
                     </div>
