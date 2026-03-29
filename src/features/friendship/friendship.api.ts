@@ -2,7 +2,7 @@
 
 import type { ResponseObject } from "@/lib/ResponseObject";
 import { http } from "../../lib/http";
-import type { Friendship, UserSearchRes } from "./friendship.type";
+import type { ContactItemRes, Friendship, UserSearchRes } from "./friendship.type";
 
 
 export async function getUserByPhoneOrUserCode(value: string): Promise<UserSearchRes[]> {
@@ -43,4 +43,9 @@ export async function blockUser(userId: number): Promise<ResponseObject<void>> {
 export async function unblockUser(userId: number): Promise<ResponseObject<void>> {
   const {data} = await http.post(`/friends/unblock/${userId}`);
   return data
+}
+
+export async function getContacts(): Promise<ContactItemRes[]> {
+  const {data} = await http.get(`/friends/contacts`);
+  return data.data;
 }

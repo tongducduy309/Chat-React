@@ -33,3 +33,9 @@ export interface UpdateFriendshipRes {
     targetUserId: number;
     friendshipStatus: FriendshipStatus;
 }
+
+export interface ContactItemRes {
+  id: number;
+  displayName: string;
+  avatarUrl?: string | null;
+};

@@ -150,6 +150,8 @@ export default function AppLayout() {
           setOpenFaceRegister(false);
         }}
       />
+
+      
     </div>
   );
 }

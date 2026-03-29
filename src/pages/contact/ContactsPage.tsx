@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Search,
   UserRound,
@@ -9,6 +9,9 @@ import {
   Filter,
   Earth,
   UserCheck,
+  UserRoundX,
+  MessageCircleMore,
+  CircleUser,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,29 +30,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { ContactItemRes } from "@/features/friendship/friendship.type";
+import { getContacts, unfriend } from "@/features/friendship/friendship.api";
+import { useNavigate } from "react-router-dom";
+import { App } from "antd";
+import { useConfirmDialog } from "@/hook/useConfirmDialog";
 
-type ContactItem = {
-  id: number;
-  displayName: string;
-  avatarUrl?: string | null;
-  online?: boolean;
-};
 
-const mockFriends: ContactItem[] = [
-  { id: 1, displayName: "Anh Linh" },
-  { id: 2, displayName: "Anh Nam Đen" },
-  { id: 3, displayName: "Cậu Chiến", online: true },
-  { id: 4, displayName: "Cậu Chính" },
-  { id: 5, displayName: "CHẤT GÂY NGHIỆN ❤️" },
-  { id: 6, displayName: "Chị Của Em" },
-  { id: 7, displayName: "Chị Dương Gara Bách Tâm Q7" },
-  { id: 8, displayName: "Chú Kiên" },
-  { id: 9, displayName: "Chương Mi Nhon" },
-  { id: 10, displayName: "Dung Phạm" },
-  { id: 11, displayName: "Duy Nguyễn", online: true },
-  { id: 12, displayName: "Hà Trần" },
-  { id: 13, displayName: "Khánh Vy" },
-];
 
 type MenuKey = "friends" | "groups" | "friend-requests" | "group-invites";
 type SortKey = "az" | "za";
@@ -99,7 +86,27 @@ function ContactMenuItem({
   );
 }
 
-function ContactRow({ item }: { item: ContactItem }) {
+function ContactRow({ item, onDelete }: { item: ContactItemRes, onDelete?: () => void }) {
+  const navigate = useNavigate();
+  const {notification} = App.useApp();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
+  const handleDeleteFriend = async () => {
+    const ok = await confirm({
+      title: "Xóa bạn bè",
+      description: "Bạn có chắc chắn muốn xóa bạn bè này?",
+      confirmText: "Xóa",
+      cancelText: "Quay lại",
+      confirmVariant: "destructiveSoft"
+    });
+    if (!ok) return
+
+    await unfriend(item.id).then(() => {
+      notification.success({title: "Xóa bạn bè thành công"});
+      onDelete?.();
+    }).catch(() => {
+      notification.error({title: "Xóa bạn bè thất bại"});
+    })
+  }
   return (
     <div className="group flex items-center gap-3 rounded-xl px-3 py-2 transition hover:bg-slate-100">
       <div className="relative">
@@ -107,9 +114,7 @@ function ContactRow({ item }: { item: ContactItem }) {
           <AvatarImage src={item.avatarUrl ?? undefined} />
           <AvatarFallback>{getFallback(item.displayName)}</AvatarFallback>
         </Avatar>
-        {item.online && (
-          <span className="absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-white bg-green-500" />
-        )}
+        
       </div>
 
       <div className="min-w-0 flex-1">
@@ -129,11 +134,12 @@ function ContactRow({ item }: { item: ContactItem }) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem>Nhắn tin</DropdownMenuItem>
-          <DropdownMenuItem>Xem hồ sơ</DropdownMenuItem>
-          <DropdownMenuItem>Xóa bạn</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate(`/chat?userId=${item.id}`)}><MessageCircleMore /> Nhắn tin</DropdownMenuItem>
+          <DropdownMenuItem><CircleUser />Xem hồ sơ</DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onClick={handleDeleteFriend}> <UserRoundX /> Xóa bạn</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <ConfirmDialog />
     </div>
   );
 }
@@ -143,9 +149,10 @@ export const ContactsPage = () => {
   const [keyword, setKeyword] = useState("");
   const [sortBy, setSortBy] = useState<SortKey>("az");
   const [filterBy, setFilterBy] = useState<FilterKey>("all");
+  const [friends, setFriends] = useState<ContactItemRes[]>([]);
 
   const groupedFriends = useMemo(() => {
-    let data = [...mockFriends];
+    let data = [...friends];
 
     if (keyword.trim()) {
       const kw = normalizeText(keyword.trim());
@@ -154,16 +161,16 @@ export const ContactsPage = () => {
       );
     }
 
-    if (filterBy === "online") {
-      data = data.filter((item) => item.online);
-    }
+    // if (filterBy === "online") {
+    //   data = data.filter((item) => item.online);
+    // }
 
     data.sort((a, b) => {
       const cmp = a.displayName.localeCompare(b.displayName, "vi");
       return sortBy === "az" ? cmp : -cmp;
     });
 
-    const groups = new Map<string, ContactItem[]>();
+    const groups = new Map<string, ContactItemRes[]>();
 
     for (const item of data) {
       const letter = getGroupLetter(item.displayName);
@@ -175,7 +182,15 @@ export const ContactsPage = () => {
     return Array.from(groups.entries()).sort(([a], [b]) =>
       a.localeCompare(b, "en")
     );
-  }, [keyword, sortBy, filterBy]);
+  }, [keyword, sortBy, filterBy, friends]);
+
+  useEffect(() => {
+    const fetchFriends = async () => {
+      const res = await getContacts();
+      setFriends(res);
+    };
+    fetchFriends();
+  }, []);
 
   return (
     <div className="h-full bg-[#f3f5f7]">
@@ -248,7 +263,7 @@ export const ContactsPage = () => {
             <Card className="border-none shadow-none">
               <CardHeader className="pb-3">
                 <CardTitle className="text-base font-semibold text-slate-800">
-                  Bạn bè ({mockFriends.length})
+                  Bạn bè ({friends.length})
                 </CardTitle>
               </CardHeader>
 
@@ -323,7 +338,7 @@ export const ContactsPage = () => {
 
                         <div className="space-y-1">
                           {items.map((item) => (
-                            <ContactRow key={item.id} item={item} />
+                            <ContactRow key={item.id} item={item} onDelete={() => setFriends(friends.filter((i) => i.id !== item.id))} />
                           ))}
                         </div>
                       </div>
